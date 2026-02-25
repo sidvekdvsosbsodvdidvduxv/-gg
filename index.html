@@ -10,6 +10,7 @@
   padding: 0;
   box-sizing: border-box;
   font-family: "PingFang SC", "微软雅黑", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 body {
   background: #120322;
@@ -21,7 +22,6 @@ body {
   position: fixed;
   top: 20px;
   left: 50%;
-  transform: translateX(-50%);
   z-index: 10000;
   width: 10px;
   height: 40px;
@@ -32,9 +32,12 @@ body {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  animation: islandAnim 6s infinite ease-in-out;
   text-align: center;
   padding: 0 12px;
+  transform: translateX(-50%) translateZ(0);
+  will-change: width;
+  backface-visibility: hidden;
+  animation: islandAnim 6s infinite ease-in-out;
 }
 @keyframes islandAnim {
   0%   { width: 10px;  }
@@ -55,7 +58,7 @@ body {
   position: fixed;
   top: 70px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateZ(0);
   z-index: 999;
   width: 200px;
   padding: 6px 10px;
@@ -66,6 +69,8 @@ body {
   border: 1px solid rgba(180,133,255,0.25);
   text-align: center;
   box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 .time-label, .runtime-label {
   color: #ccc;
@@ -87,6 +92,7 @@ body {
   border-radius: 24px;
   padding: 24px;
   min-height: calc(100vh - 140px);
+  transform: translateZ(0);
 }
 .avatar {
   width: 140px;
@@ -95,17 +101,20 @@ body {
   border: 2px solid #b4a8ff;
   margin: 0 auto 16px;
   overflow: hidden;
-  /* 头像顺时针旋转 */
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
   animation: avatarRotate 8s linear infinite;
 }
 @keyframes avatarRotate {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from { transform: rotate(0deg) translateZ(0); }
+  to   { transform: rotate(360deg) translateZ(0); }
 }
 .avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
 }
 .title {
   text-align: center;
@@ -129,8 +138,10 @@ body {
   margin: 10px 0;
   border-radius: 14px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
   border: 1px solid transparent;
+  transform: translateZ(0);
+  will-change: box-shadow, border-color;
 }
 .item {
   padding: 12px 18px;
@@ -160,6 +171,7 @@ body {
   justify-content: center;
   color: #fff;
   font-size: 20px;
+  transform: translateZ(0);
 }
 .item-text h3, .big-item h3 {
   font-size: 16px;
@@ -185,6 +197,8 @@ body {
   border: none;
   color: #fff;
   font-size: 24px;
+  transform: translateZ(0);
+  cursor: pointer;
 }
 </style>
 </head>
@@ -209,7 +223,6 @@ body {
   <div class="title">康歌项目导航</div>
   <div class="info">作者：康歌~</div>
 
-  <!-- 前4个：网站 -->
   <div class="item" onclick="go(1)">
     <div class="icon">📦</div>
     <div class="item-text">
@@ -242,21 +255,18 @@ body {
     </div>
   </div>
 
-  <!-- 第5个：QQ群 -->
   <div class="big-item" onclick="go(5)">
     <div class="icon">👥</div>
     <h3>康歌班级群</h3>
     <p>官方QQ群</p>
   </div>
 
-  <!-- 第6个：Telegram 频道 -->
   <div class="big-item" onclick="go(6)">
     <div class="icon">📢</div>
     <h3>康歌主频道</h3>
     <p>需要梯子</p>
   </div>
 
-  <!-- 第7个：Telegram 频道 -->
   <div class="big-item" onclick="go(7)">
     <div class="icon">💬</div>
     <h3>作者反馈</h3>
@@ -265,11 +275,39 @@ body {
 </div>
 
 <div class="float-buttons">
-  <button class="float-btn">🎵</button>
+  <button class="float-btn" id="musicBtn">🎵</button>
 </div>
 
 <script>
-// 进入时请求权限（仅在WebView/混合应用中生效）
+// ==================== 云端背景音乐 ====================
+const audio = new Audio("https://lf-bot/res/audio/bgm1.mp3");
+audio.loop = true;
+audio.volume = 0.25;
+let isMusicOn = false;
+
+function toggleMusic() {
+  const btn = document.getElementById("musicBtn");
+  if (!isMusicOn) {
+    audio.play().catch(() => {});
+    btn.textContent = "🔇";
+  } else {
+    audio.pause();
+    btn.textContent = "🎵";
+  }
+  isMusicOn = !isMusicOn;
+}
+
+document.getElementById("musicBtn").addEventListener("click", toggleMusic);
+
+window.addEventListener("load", () => {
+  toggleMusic();
+});
+
+document.addEventListener("touchstart", () => {
+  if (!isMusicOn) toggleMusic();
+}, { once: true });
+
+// ==================== 权限 ====================
 function requestPermissions() {
   if (window.android && window.android.requestPermissions) {
     window.android.requestPermissions([
@@ -279,24 +317,22 @@ function requestPermissions() {
   }
 }
 
+// ==================== 跳转 ====================
 function go(num) {
   let url = "";
   switch(num) {
-    // 前4个网站
-    case 1: url = "https://网址1"; break;
+    case 1: url = "https://www.123912.com/s/zZSavd-fEjgH?pwd=6402#"; break;
     case 2: url = "https://kangge.wc110.cc"; break;
     case 3: url = "https://网址3"; break;
     case 4: url = "https://v.kuaishou.com/72H0lcct"; break;
-    // QQ群
     case 5: url = "https://qun.qq.com/universal-share/share?ac=1&authKey=fH3gaSOlDTcMLChSlZ7n0mCQUpjm8zek1dLThkWYgDi02cf6QajWHNSbBitM7bDo&busi_data=eyJncm91cENvZGUiOiI2NDU5NTg2MjIiLCJ0b2tlbiI6Im4xaGhoRG0wWk03NlA2MDFDRXFabStZVTZ4SFBQczRBSmVidWlUcXJKVWcvUmI1ZmQycm5QZGdNMFU4WDE0NkgiLCJ1aW4iOiIzOTM4NjYxMzczIn0%3D&data=QE24VX3PvVrmcRWEmBmQhwp98BlGpipMYylWOmNCKf2MbMisIzx41l3S0P_OvXdF1xmOUp8i08_U9PP7dMt4Ng&svctype=4&tempid=h5_group_info"; break;
-    // Telegram 频道
     case 6: url = "https://t.me/你的TG频道1"; break;
     case 7: url = "https://t.me/你的TG频道2"; break;
   }
   if (url) window.open(url, "_blank");
 }
 
-// ==================== 灵动岛逻辑完全不动 ====================
+// ==================== 当前时间 ====================
 function updateTime() {
   const d = new Date();
   const h = String(d.getHours()).padStart(2,0);
@@ -307,6 +343,27 @@ function updateTime() {
 setInterval(updateTime, 1000);
 updateTime();
 
+// ==================== 运行时间：从 2025-01-01 开始算 ====================
+const startTime = new Date("2025-01-01T00:00:00");
+
+function updateRunTime() {
+  const now = new Date();
+  const diff = now - startTime;
+  const ms = diff;
+  const sec = Math.floor(ms / 1000);
+  const min = Math.floor(sec / 60);
+  const hour = Math.floor(min / 60);
+  const day = Math.floor(hour / 24);
+
+  const h = hour % 24;
+  const m = min % 60;
+
+  document.getElementById("runtime").innerText = `${day}天${h}时${m}分`;
+}
+setInterval(updateRunTime, 1000);
+updateRunTime();
+
+// ==================== 灵动岛文字 ====================
 const texts = [
   "人都是不会愧疚的\n遇见更好的谁还记得你",
   "人人都说要知足\n我到底要了什么我又得到了什么？"
@@ -316,7 +373,7 @@ const el = document.getElementById("sadText");
 let index = 0;
 
 function runCycle() {
-  el.innerText = "";
+  el.textContent = "";
   setTimeout(() => {
     typeText();
   }, 1500);
@@ -328,7 +385,7 @@ function typeText() {
   let i = 0;
   const timer = setInterval(() => {
     current += text[i];
-    el.innerText = current;
+    el.textContent = current;
     i++;
     if (i >= text.length) {
       clearInterval(timer);
@@ -339,20 +396,19 @@ function typeText() {
 
 function eraseText() {
   const timer = setInterval(() => {
-    el.innerText = el.innerText.slice(0, -1);
-    if (el.innerText === "") {
+    el.textContent = el.textContent.slice(0, -1);
+    if (el.textContent === "") {
       clearInterval(timer);
       index = (index + 1) % 2;
     }
   }, 30);
 }
 
-// 页面加载完成后执行
 window.addEventListener("load", () => {
-  requestPermissions(); // 请求权限
-  setTimeout(runCycle, 850); // 启动灵动岛
+  requestPermissions();
+  setTimeout(runCycle, 850);
   setInterval(runCycle, 6000);
-});
+}, { passive: true });
 </script>
 </body>
 </html>
